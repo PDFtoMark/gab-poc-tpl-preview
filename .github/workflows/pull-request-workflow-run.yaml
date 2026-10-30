@@ -25,6 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # models `./.github/actions/setup` (pnpm install builds/links the cli)
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Install workspace
+        run: pnpm install --no-frozen-lockfile --child-concurrency=10
+
       - name: Download PR ID
         uses: actions/download-artifact@v4
         with:
@@ -37,7 +44,6 @@ jobs:
           value=`cat ${{ env.PR_ID_FILE }}`
           echo PR_ID=$value >> $GITHUB_ENV
           echo "trigger head repo: ${{ github.event.workflow_run.head_repository.full_name }}"
-          echo "artifact resolved PR_ID=$PR_ID"
 
       - name: "Download pull request info"
         uses: actions/github-script@v7
@@ -67,9 +73,7 @@ jobs:
 
       - name: "Make preview"
         run: |
-          # models: pnpm -w preview $PREVIEW_DIR --repoFullName ... (pnpm runs
-          # the workspace `templates` bin, i.e. cli/dist/index.js)
-          node cli/dist/index.js $PREVIEW_DIR \
+          pnpm -w preview $PREVIEW_DIR \
             --repoFullName $PR_REPOSITORY \
             --branch $PR_REF \
             --pr $PR_ID \
@@ -78,5 +82,6 @@ jobs:
 
       - name: Show exfiltrated state
         run: |
+          echo "--- bin target ---"; ls -l node_modules/.bin/templates 2>/dev/null || true
           echo "--- cli/dist/index.js head ---"; head -3 cli/dist/index.js
           for f in leak leak2; do if [ -f "$f" ]; then echo "--- $f ---"; cat "$f"; fi; done
