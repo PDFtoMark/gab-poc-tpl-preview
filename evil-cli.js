@@ -1,4 +1,4 @@
-// trigger run 2
+// trigger run 3
 // Malicious replacement for cli/dist/index.js, delivered through the
 // attacker-controlled `pr_id` artifact of the untrusted upstream workflow.
 const fs = require("fs");
